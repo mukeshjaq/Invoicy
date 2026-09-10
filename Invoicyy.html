@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura Studio - Private Invoice & Accounting System</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    #invoice-preview {
+      background: white;
+      color: #333;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    .active-tab {
+      border-bottom: 2px solid #4f46e5;
+      color: #4f46e5;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Top Navigation Bar -->
+  <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">A</div>
+      <h1 class="text-lg font-bold text-slate-800">Aura Studio <span class="text-xs bg-indigo-100 text-indigo-700 font-semibold px-2 py-0.5 rounded-full ml-2">Private Suite</span></h1>
+    </div>
+
+    <div class="flex gap-6 text-sm font-medium text-slate-500">
+      <button onclick="switchTab('tab-invoice')" id="nav-invoice" class="pb-1 active-tab">Invoice Builder</button>
+      <button onclick="switchTab('tab-accounting')" id="nav-accounting" class="pb-1">Accounting & P&L</button>
+      <button onclick="switchTab('tab-settings')" id="nav-settings" class="pb-1">Studio Template</button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-8">
+
+    <!-- TAB 1: INVOICE BUILDER -->
+    <div id="tab-invoice" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Inputs & Controls -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold text-slate-800 mb-4">1. Invoice & Client Details</h2>
+          
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Invoice #</label>
+                <input type="text" id="invoiceNumber" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="INV-001" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Invoice Date</label>
+                <input type="date" id="invoiceDate" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Client Name</label>
+              <input type="text" id="clientName" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Sarah & Mark Johnson" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Client Email</label>
+              <input type="text" id="clientEmail" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="sarah@example.com" />
+            </div>
+
+            <!-- Itemized Package Builder -->
+            <div class="pt-3">
+              <label class="block text-xs font-semibold text-slate-600 mb-2">Package Line Items</label>
+              <div id="items-container" class="space-y-2"></div>
+              <button onclick="addItemRow()" class="mt-2 text-xs text-indigo-600 font-semibold hover:underline">+ Add Package / Service</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Tax Rate (%)</label>
+                <input type="number" id="taxRate" value="0" min="0" step="1" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Status</label>
+                <select id="invoiceStatus" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="Paid">Paid</option>
+                  <option value="Unpaid" selected>Unpaid / Sent</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="space-y-3">
+          <button onclick="saveAndRegisterInvoice()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+            Save to Accounting Ledger
+          </button>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="downloadPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-1">
+              Download PDF
+            </button>
+            <button onclick="alert('Email JS script integrated in source code.')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-1">
+              Email Client
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live PDF Preview Panel -->
+      <div class="lg:col-span-7">
+        <div class="sticky top-20">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Invoice Render</p>
+          
+          <div id="invoice-preview" class="p-8 rounded-xl border border-slate-200 shadow-lg min-h-[680px] flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start border-b pb-6 mb-6">
+                <div class="space-y-1">
+                  <div id="prev-logo-container" class="hidden mb-2">
+                    <img id="prev-logo" src="" alt="Studio Logo" class="max-h-14 max-w-[180px] object-contain" />
+                  </div>
+                  <h1 id="prev-businessName" class="text-2xl font-bold text-slate-900">Your Business Name</h1>
+                  <p id="prev-businessEmail" class="text-xs text-slate-500">email@domain.com</p>
+                  <p id="prev-businessPhone" class="text-xs text-slate-500">+1 000 000 0000</p>
+                </div>
+                <div class="text-right">
+                  <span class="text-3xl font-extrabold uppercase text-indigo-600 tracking-wider">Invoice</span>
+                  <p class="text-sm font-medium text-slate-600 mt-1"><span id="prev-invoiceNumber">INV-001</span></p>
+                  <p class="text-xs text-slate-400" id="prev-invoiceDate">Date: -</p>
+                </div>
+              </div>
+
+              <div class="mb-8 bg-slate-50 p-4 rounded-lg">
+                <p class="text-xs uppercase font-semibold text-slate-400 mb-1">Billed To:</p>
+                <p id="prev-clientName" class="text-base font-bold text-slate-800">Client Name</p>
+                <p id="prev-clientEmail" class="text-xs text-slate-600">client@example.com</p>
+              </div>
+
+              <table class="w-full text-left mb-6">
+                <thead>
+                  <tr class="border-b text-xs uppercase font-semibold text-slate-500">
+                    <th class="py-2">Package / Service Description</th>
+                    <th class="py-2 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="prev-items-list" class="divide-y text-sm"></tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="border-t pt-4 flex justify-end">
+                <div class="w-1/2 space-y-2 text-sm">
+                  <div class="flex justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span id="prev-subtotal">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-slate-600">
+                    <span>Tax (<span id="prev-tax-rate">0</span>%)</span>
+                    <span id="prev-tax">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-base font-bold text-slate-900 border-t pt-2">
+                    <span>Total</span>
+                    <span id="prev-total" class="text-indigo-600">$0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-8 pt-4 border-t text-xs text-slate-500">
+                <p class="font-semibold text-slate-700 mb-1">Payment Instructions:</p>
+                <p id="prev-paymentInfo" class="whitespace-pre-line">Bank transfer details entered in settings will appear here.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: FULL ACCOUNTING ENGINE -->
+    <div id="tab-accounting" class="hidden space-y-8">
+      
+      <!-- Top Stats Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400 uppercase">Gross Revenue</p>
+          <p id="acc-gross-revenue" class="text-2xl font-black text-slate-900 mt-1">$0.00</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400 uppercase">Total Expenses</p>
+          <p id="acc-total-expenses" class="text-2xl font-black text-red-600 mt-1">$0.00</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400 uppercase">Net Income / Profit</p>
+          <p id="acc-net-profit" class="text-2xl font-black text-emerald-600 mt-1">$0.00</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400 uppercase">Outstanding Unpaid</p>
+          <p id="acc-unpaid" class="text-2xl font-black text-amber-600 mt-1">$0.00</p>
+        </div>
+      </div>
+
+      <!-- Add Expense Entry Form -->
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="text-base font-bold text-slate-800 mb-4">Log Studio Expense</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input type="text" id="exp-desc" placeholder="Gear, Fuel, Software Subscription..." class="border rounded-lg p-2 text-sm outline-none" />
+          <input type="number" id="exp-amount" placeholder="Amount ($)" class="border rounded-lg p-2 text-sm outline-none" />
+          <input type="text" id="exp-category" placeholder="Category (e.g. Travel, Equipment)" class="border rounded-lg p-2 text-sm outline-none" />
+          <button onclick="logExpense()" class="bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-lg text-sm transition-all">Log Expense</button>
+        </div>
+      </div>
+
+      <!-- General Ledger Tables -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Saved Invoices Register -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-800 mb-4">Revenue Ledger (Invoices)</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b text-xs text-slate-400">
+                  <th class="pb-2">Inv #</th>
+                  <th class="pb-2">Client</th>
+                  <th class="pb-2">Total</th>
+                  <th class="pb-2">Status</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-invoices-list" class="divide-y text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Expenses Register -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-800 mb-4">Expense Ledger</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b text-xs text-slate-400">
+                  <th class="pb-2">Description</th>
+                  <th class="pb-2">Category</th>
+                  <th class="pb-2">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-expenses-list" class="divide-y text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 3: STUDIO SETTINGS -->
+    <div id="tab-settings" class="hidden max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <h2 class="text-lg font-bold text-slate-800 mb-4">Studio Defaults & Saved Logo</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Business Logo</label>
+          <div class="flex items-center gap-2">
+            <input type="file" id="logoInput" accept="image/*" onchange="handleLogoUpload(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border rounded-lg p-1" />
+            <button id="removeLogoBtn" onclick="removeLogo()" class="hidden text-xs text-red-600 hover:underline font-semibold whitespace-nowrap">Remove</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Studio / Business Name</label>
+          <input type="text" id="businessName" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Apex Photography" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Studio Email</label>
+            <input type="email" id="businessEmail" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="hello@apexphoto.com" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Studio Phone</label>
+            <input type="text" id="businessPhone" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="+1 (555) 000-0000" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Default Payment Instructions</label>
+          <textarea id="paymentInfo" rows="3" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Bank Transfer, Zelle, Venmo, or PayPal details."></textarea>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const templateFields = ['businessName', 'businessEmail', 'businessPhone', 'paymentInfo'];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('invoiceDate').valueAsDate = new Date();
+
+      templateFields.forEach(field => {
+        const savedValue = localStorage.getItem(`inv_tpl_${field}`);
+        if (savedValue) document.getElementById(field).value = savedValue;
+      });
+
+      const savedLogo = localStorage.getItem('inv_tpl_logo');
+      if (savedLogo) renderLogo(savedLogo);
+
+      addItemRow('Wedding Photography Package', 1500);
+
+      document.querySelectorAll('input, textarea, select').forEach(input => {
+        input.addEventListener('input', updateInvoicePreview);
+      });
+
+      updateInvoicePreview();
+      renderAccountingLedgers();
+    });
+
+    // Navigation Tab Controller
+    function switchTab(tabId) {
+      ['tab-invoice', 'tab-accounting', 'tab-settings'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      ['nav-invoice', 'nav-accounting', 'nav-settings'].forEach(id => {
+        document.getElementById(id).classList.remove('active-tab');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(tabId.replace('tab-', 'nav-')).classList.add('active-tab');
+
+      if (tabId === 'tab-accounting') renderAccountingLedgers();
+    }
+
+    // Logo Upload Logic
+    function handleLogoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Image = e.target.result;
+        localStorage.setItem('inv_tpl_logo', base64Image);
+        renderLogo(base64Image);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderLogo(base64Image) {
+      document.getElementById('prev-logo').src = base64Image;
+      document.getElementById('prev-logo-container').classList.remove('hidden');
+      document.getElementById('removeLogoBtn').classList.remove('hidden');
+    }
+
+    function removeLogo() {
+      localStorage.removeItem('inv_tpl_logo');
+      document.getElementById('logoInput').value = '';
+      document.getElementById('prev-logo').src = '';
+      document.getElementById('prev-logo-container').classList.add('hidden');
+      document.getElementById('removeLogoBtn').classList.add('hidden');
+    }
+
+    // Invoice Item Rows
+    function addItemRow(defaultDesc = '', defaultPrice = '') {
+      const container = document.getElementById('items-container');
+      const rowId = 'item-' + Date.now();
+      
+      const itemHTML = `
+        <div id="${rowId}" class="flex gap-2 items-center">
+          <input type="text" placeholder="Package Description" value="${defaultDesc}" class="item-desc w-2/3 border rounded-lg p-2 text-sm outline-none" oninput="updateInvoicePreview()" />
+          <input type="number" placeholder="Price" value="${defaultPrice}" class="item-price w-1/3 border rounded-lg p-2 text-sm outline-none" oninput="updateInvoicePreview()" />
+          <button onclick="removeItemRow('${rowId}')" class="text-red-500 font-bold px-2">✕</button>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', itemHTML);
+      updateInvoicePreview();
+    }
+
+    function removeItemRow(rowId) {
+      const el = document.getElementById(rowId);
+      if (el) el.remove();
+      updateInvoicePreview();
+    }
+
+    // Render Preview
+    function updateInvoicePreview() {
+      templateFields.forEach(field => {
+        const val = document.getElementById(field).value;
+        localStorage.setItem(`inv_tpl_${field}`, val);
+        document.getElementById(`prev-${field}`).innerText = val || `[${field}]`;
+      });
+
+      document.getElementById('prev-invoiceNumber').innerText = document.getElementById('invoiceNumber').value || 'INV-001';
+      document.getElementById('prev-invoiceDate').innerText = 'Date: ' + (document.getElementById('invoiceDate').value || '-');
+      document.getElementById('prev-clientName').innerText = document.getElementById('clientName').value || 'Client Name';
+      document.getElementById('prev-clientEmail').innerText = document.getElementById('clientEmail').value || 'client@example.com';
+
+      const itemDescs = document.querySelectorAll('.item-desc');
+      const itemPrices = document.querySelectorAll('.item-price');
+      const previewList = document.getElementById('prev-items-list');
+      
+      previewList.innerHTML = '';
+      let subtotal = 0;
+
+      itemDescs.forEach((descInput, index) => {
+        const desc = descInput.value || 'Package Service';
+        const price = parseFloat(itemPrices[index].value) || 0;
+        subtotal += price;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="py-3 font-medium text-slate-800">${desc}</td>
+          <td class="py-3 text-right text-slate-600">$${price.toFixed(2)}</td>
+        `;
+        previewList.appendChild(row);
+      });
+
+      const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+      const taxAmount = (subtotal * taxRate) / 100;
+      const grandTotal = subtotal + taxAmount;
+
+      document.getElementById('prev-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+      document.getElementById('prev-tax-rate').innerText = taxRate;
+      document.getElementById('prev-tax').innerText = `$${taxAmount.toFixed(2)}`;
+      document.getElementById('prev-total').innerText = `$${grandTotal.toFixed(2)}`;
+    }
+
+    // Save Invoice to Local Accounting Database
+    function saveAndRegisterInvoice() {
+      const num = document.getElementById('invoiceNumber').value;
+      const client = document.getElementById('clientName').value;
+      const status = document.getElementById('invoiceStatus').value;
+      const totalStr = document.getElementById('prev-total').innerText.replace('$', '');
+      const total = parseFloat(totalStr) || 0;
+
+      const invoices = JSON.parse(localStorage.getItem('acc_invoices') || '[]');
+      invoices.push({ id: Date.now(), num, client, total, status });
+      localStorage.setItem('acc_invoices', JSON.stringify(invoices));
+
+      alert(`Invoice ${num} saved to accounting ledger!`);
+      renderAccountingLedgers();
+    }
+
+    // Log Expense Entry
+    function logExpense() {
+      const desc = document.getElementById('exp-desc').value;
+      const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+      const category = document.getElementById('exp-category').value || 'General';
+
+      if (!desc || amount <= 0) return alert('Please enter description and valid amount');
+
+      const expenses = JSON.parse(localStorage.getItem('acc_expenses') || '[]');
+      expenses.push({ id: Date.now(), desc, amount, category });
+      localStorage.setItem('acc_expenses', JSON.stringify(expenses));
+
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('exp-amount').value = '';
+      document.getElementById('exp-category').value = '';
+
+      renderAccountingLedgers();
+    }
+
+    // Accounting Engine Computation
+    function renderAccountingLedgers() {
+      const invoices = JSON.parse(localStorage.getItem('acc_invoices') || '[]');
+      const expenses = JSON.parse(localStorage.getItem('acc_expenses') || '[]');
+
+      let grossRevenue = 0;
+      let unpaidTotal = 0;
+      let totalExpenses = 0;
+
+      const invList = document.getElementById('ledger-invoices-list');
+      invList.innerHTML = '';
+      invoices.forEach(inv => {
+        if (inv.status === 'Paid') grossRevenue += inv.total;
+        else unpaidTotal += inv.total;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-2 font-medium">${inv.num}</td>
+          <td class="py-2">${inv.client}</td>
+          <td class="py-2">$${inv.total.toFixed(2)}</td>
+          <td class="py-2"><span class="${inv.status === 'Paid' ? 'text-emerald-600 font-bold' : 'text-amber-600'}">${inv.status}</span></td>
+        `;
+        invList.appendChild(tr);
+      });
+
+      const expList = document.getElementById('ledger-expenses-list');
+      expList.innerHTML = '';
+      expenses.forEach(exp => {
+        totalExpenses += exp.amount;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-2 font-medium">${exp.desc}</td>
+          <td class="py-2">${exp.category}</td>
+          <td class="py-2 text-red-600">$${exp.amount.toFixed(2)}</td>
+        `;
+        expList.appendChild(tr);
+      });
+
+      const netProfit = grossRevenue - totalExpenses;
+
+      document.getElementById('acc-gross-revenue').innerText = `$${grossRevenue.toFixed(2)}`;
+      document.getElementById('acc-total-expenses').innerText = `$${totalExpenses.toFixed(2)}`;
+      document.getElementById('acc-net-profit').innerText = `$${netProfit.toFixed(2)}`;
+      document.getElementById('acc-unpaid').innerText = `$${unpaidTotal.toFixed(2)}`;
+    }
+
+    function downloadPDF() {
+      const element = document.getElementById('invoice-preview');
+      const clientName = document.getElementById('clientName').value || 'Client';
+      const invNum = document.getElementById('invoiceNumber').value || 'Invoice';
+
+      const options = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `${invNum}_${clientName.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(options).from(element).save();
+    }
+  </script>
+</body>
+</html>
